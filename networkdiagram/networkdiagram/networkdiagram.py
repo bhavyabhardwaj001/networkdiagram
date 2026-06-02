@@ -95,10 +95,14 @@ class CriticalPathMethod:
                 """
                 parent = self.nodes['O']
                 parent.successors.append(cur)
+                if cur in self.nodes:
+                    self.nodes[cur].predecessors.append('O')
             
             elif p in self.nodes:
                 parent = self.nodes[p]
                 parent.successors.append(cur)
+                if cur in self.nodes:
+                    self.nodes[cur].predecessors.append(p)
             
     def find_probable_paths(self,cur=None,path=""):
         """
@@ -140,6 +144,47 @@ class CriticalPathMethod:
                 self.total_project_duration = sum(self.nodes[cur_node].duration for cur_node in probable_path)
             elif(sum(self.nodes[cur_node].duration for cur_node in probable_path) == self.total_project_duration):
                 self.critical_path.append(probable_path)
+
+    def forward_pass(self):
+        """
+        Function to calculate Early Start (ES) and Early Finish (EF) for each node
+        """
+        for node in self.nodes.values():
+            node.early_start = 0
+            node.early_finish = node.duration
+            
+        changed = True
+        while changed:
+            changed = False
+            for node in self.nodes.values():
+                if node.predecessors:
+                    max_ef = max((self.nodes[p].early_finish for p in node.predecessors if p in self.nodes), default=0)
+                    if max_ef > node.early_start:
+                        node.early_start = max_ef
+                        node.early_finish = node.early_start + node.duration
+                        changed = True
+
+    def backward_pass(self):
+        """
+        Function to calculate Late Start (LS) and Late Finish (LF) for each node
+        """
+        if self.total_project_duration == -1:
+            self.total_project_duration = max((n.early_finish for n in self.nodes.values()), default=0)
+            
+        for node in self.nodes.values():
+            node.latest_finish = self.total_project_duration
+            node.latest_start = node.latest_finish - node.duration
+            
+        changed = True
+        while changed:
+            changed = False
+            for node in self.nodes.values():
+                if node.successors:
+                    min_ls = min((self.nodes[s].latest_start for s in node.successors if s in self.nodes), default=node.latest_finish)
+                    if min_ls < node.latest_finish:
+                        node.latest_finish = min_ls
+                        node.latest_start = node.latest_finish - node.duration
+                        changed = True
                 
     def get_edges(self):
         """
