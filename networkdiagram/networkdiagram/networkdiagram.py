@@ -270,7 +270,15 @@ class CriticalPathMethod:
 
         pos = self.get_hierarchical_layout(G,'O')
         
-        nx.draw(G,pos,with_labels=True,node_size=700,edge_color=edges_colors,arrows=True,arrowstyle='-|>',arrowsize=20)
+        labels = {}
+        for node in G.nodes():
+            if node in self.nodes:
+                n = self.nodes[node]
+                labels[node] = f"{node}\nES:{n.early_start} EF:{n.early_finish}\nLS:{n.latest_start} LF:{n.latest_finish}"
+            else:
+                labels[node] = str(node)
+        
+        nx.draw(G,pos,labels=labels,with_labels=True,node_size=2500,font_size=8,edge_color=edges_colors,arrows=True,arrowstyle='-|>',arrowsize=20)
         
         edge_durations = nx.get_edge_attributes(G,'duration')
         
@@ -298,3 +306,9 @@ class CriticalPathMethod:
         print("Total project duration : ",self.total_project_duration)
         print("Duration unit :",self.duration_unit)
         print("Edges : ",self.edges)
+        
+        print("\nNode Properties:")
+        print(f"{'Node':<5} | {'ES':<3} | {'EF':<3} | {'LS':<3} | {'LF':<3}")
+        print("-" * 35)
+        for name, node in self.nodes.items():
+            print(f"{name:<5} | {node.early_start:<3} | {node.early_finish:<3} | {node.latest_start:<3} | {node.latest_finish:<3}")
